@@ -1,6 +1,6 @@
 # Kuchcik
 
-Gra w gotowanie dla najmłodszych. Do lady przychodzą klienci i pokazują w dymku, jaką kanapkę chcą. Robisz ją według obrazkowego przepisu, podajesz i dostajesz monety do skarbonki. Gra nie wymaga czytania, bo lektor mówi wszystko na głos.
+Gra w gotowanie dla najmłodszych. Do lady przychodzą klienci i pokazują w dymku, co chcą zjeść. Robisz to według obrazkowego przepisu, podajesz i dostajesz monety do skarbonki. 7 stanowisk (kanapki, owocowy bar, lodziarnia, naleśnikarnia, pizzeria, zupy, cukiernia) po 5 poziomów – przejście poziomu odblokowuje następny. Gra nie wymaga czytania, bo lektor mówi wszystko na głos.
 
 Zagraj: https://jacekmoss.github.io/kuchcik/
 

@@ -1,7 +1,7 @@
 {
   "name": "Kuchcik",
   "short_name": "Kuchcik",
-  "description": "Gra w gotowanie dla najmłodszych: zrób kanapkę i podaj ją klientowi",
+  "description": "Gra w gotowanie dla najmłodszych: kanapki, lody, naleśniki, pizza, zupy i muffinki",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",

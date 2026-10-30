@@ -27,13 +27,31 @@ Technika i styl są takie jak w Rybkach i Tropicielu: Canvas, czysty JS, lektor,
 | Krojenie | połóż warzywo na desce i stukaj, każde stuknięcie odcina plasterek | liczenie | ✅ prototyp |
 | Składanie | warstwy w kolejności z przepisu | sekwencja | ✅ prototyp |
 | Podawanie | przeciągnij kanapkę do klienta | — | ✅ prototyp |
-| Mieszanie | kręcenie palcem w kółko | motoryka | ⏳ |
-| Smażenie | przewróć, gdy złote | obserwacja | ⏳ |
-| Piekarnik | pierścień-zegar, dzwonek | cierpliwość | ⏳ |
-| Nalewanie | przytrzymaj, puść przy kresce | zatrzymanie w porę | ⏳ |
-| Dekorowanie | swobodne posypki | kreatywność | ⏳ |
+| Mieszanie | kręcenie łyżką w kółko, kropki liczą obroty | motoryka, liczenie | ✅ |
+| Smażenie | naleśnik się rumieni, stuknij, żeby przewrócić | obserwacja | ✅ |
+| Piekarnik | włóż danie, pierścień-zegar, dzwonek, stuknij piekarnik | cierpliwość | ✅ |
+| Nalewanie | przytrzymaj dzbanek nad naczyniem, puść przy kresce | zatrzymanie w porę | ✅ |
+| Smarowanie | masło, dżem, czekolada, sos, lukier | motoryka | ✅ |
+| Posypywanie | potrząsaj nad daniem (ser, posypka, cukier puder) | motoryka | ✅ |
 
-## 4. Rozdziały
+## 4. Stanowiska (każde ma 5 poziomów, przejście poziomu odblokowuje następny – jak krainy w Tropicielu)
+
+Mapa poziomów: 7 kolumn-stanowisk, w każdej 5 kółek z numerem. Zamknięte mają kłódkę, przejście daje monetę na kółku,
+kropki obok pokazują trudność. Trudność rośnie: więcej klientów (2→4), dłuższe przepisy, więcej sztuk do liczenia,
+od poziomu 3 nalewanie nie zatrzymuje się samo przy kresce i węższy jest zakres „w sam raz”, dłuższe smażenie/pieczenie,
+podpowiedzi pojawiają się później.
+
+| # | Stanowisko | Dania | Czynności |
+|---|---|---|---|
+| 1 | Kanapki | z serem, z sałatą i szynką, z pomidorem, z serem i ogórkiem, wielka | kładzenie, smarowanie, krojenie |
+| 2 | Owocowy bar | miseczka bananów, sałatka, tęczowa sałatka, jogurt z owocami, koktajl truskawkowy i bananowy | krojenie, nalewanie, mieszanie |
+| 3 | Lodziarnia | gałki w kolejności z obrazka, posypka, wafelek, wisienka, polewa | kolejność kolorów, posypywanie |
+| 4 | Naleśnikarnia | z dżemem, z czekoladą i bananem, z truskawkami, wielki | nalewanie, smażenie i przewracanie |
+| 5 | Pizzeria | z serem, z salami, z pieczarkami i oliwkami, ze wszystkim | sos, ser, liczenie dodatków, piekarnik |
+| 6 | Zupy | marchewkowa, rosół, pomidorowa, jarzynowa | woda do kreski, krojenie, mieszanie, gotowanie |
+| 7 | Cukiernia | muffinka, z lukrem, kolorowa z wisienką, urodzinowa ze świeczkami | nalewanie, piekarnik, dekorowanie |
+
+## 4a. Pierwotny pomysł rozdziałów
 | # | Rozdział | Dania | Nowość |
 |---|---|---|---|
 | 1 | Domowa kuchnia | kanapki (ser, pomidor, sałata+szynka, ser+ogórek) | spiżarnia, smarowanie, krojenie |
@@ -57,19 +75,20 @@ Technika i styl są takie jak w Rybkach i Tropicielu: Canvas, czysty JS, lektor,
 - **Tryb swobodny** „Gotuj, co chcesz”: bez zamówień, a klient i tak chwali.
 
 ## 7. Technologia
-- `index.html` + `game.js`, Canvas, grafika rysowana kodem (`Path2D`), bez obrazków i bez budowania.
+- `index.html` + `assets.js` + `game.js`, Canvas, bez bibliotek i bez budowania.
+- Grafika: kształty SVG w `tools/art.py` i `tools/art_more.py` (te same co na kanwie projektowej „Kuchcik — szata graficzna kuchni”). `python tools/gen_assets.py` generuje `assets.js` oraz ikony; gra raz zamienia SVG na obrazki w pamięci.
 - Świat ma 1280×720 jednostek i skaluje się do ekranu (gra poziomo; na telefonie po starcie pełny ekran i próba blokady w poziomie).
 - Web Audio do efektów (dzwonek, chrupanie, krojenie, monety, fanfary).
 - Pointer Events: mysz, palec i rysik.
 - PWA: `manifest.webmanifest`, `sw.js` (najpierw sieć, bez sieci kopia), ikony 192/512/maskable.
-- `localStorage`: `kuchcik-level`, `kuchcik-money`, `kuchcik-sound`.
-- Konsola testowa: `__kuchcik.startGame()`, `__kuchcik.loadLevel(n)`, `__kuchcik.step(sek)`, `__kuchcik.auto()` (wykonuje bieżący krok przepisu).
+- `localStorage`: `kuchcik-prog` (odblokowany poziom i przejścia), `kuchcik-money`, `kuchcik-sound`.
+- Konsola testowa: `__kuchcik.startGame()`, `__kuchcik.loadLevel(n)` (0–34), `__kuchcik.step(sek)`, `__kuchcik.auto()` (wykonuje bieżący krok przepisu), `__kuchcik.unlockAll()`.
 
 ## 8. Etapy
 1. ✅ **Prototyp:** kuchnia z kanapkami, 4 przepisy, klienci-ludzie, monety i skarbonka, podpowiedzi, koniec poziomu.
-2. ⏳ Test z dzieckiem: czy smarowanie, krojenie i przeciąganie są wykonalne, i czy tempo lektora pasuje.
-3. ⏳ Kolejne stanowiska i dania z rozdziałów 2–4, mapa rozdziałów.
-4. ⏳ Tryb łatwy: 20 poziomów.
-5. ⏳ Tryb normalny.
+2. ✅ Nowa szata graficzna (kanwa projektowa), logo, skarbonka i monety.
+3. ✅ 7 stanowisk po 5 poziomów z rosnącą trudnością, mapa poziomów z odblokowywaniem.
+4. ⏳ Test z dzieckiem: czy smarowanie, mieszanie, nalewanie i przewracanie są wykonalne, i czy tempo lektora pasuje.
+5. ⏳ Tryb normalny (kolejka klientów, dwa stanowiska naraz).
 6. ⏳ Sklep za monety, szafa, wystrój, tryb swobodny.
 7. ⏳ Muzyczka w tle, układ pionowy na telefonie, szlif.
