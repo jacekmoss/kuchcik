@@ -6,7 +6,7 @@ Technika i styl są takie jak w Rybkach i Tropicielu: Canvas, czysty JS, lektor,
 
 ## 1. Założenia dla małego dziecka
 - **Zero czytania.** Przepis, zamówienie i licznik to obrazki. Lektor (`speechSynthesis`, polski głos) mówi wszystko. Klient mówi własnym głosem: dziecko wyżej, dziadek niżej.
-- **Brak porażki.** Nie ma czasu, żyć ani złych klientów.
+- **Brak porażki (tryb łatwy).** Nie ma czasu, żyć ani złych klientów. W trybie trudnym złe danie rozczarowuje klienta.
 - **Zły składnik delikatnie odskakuje** z dźwiękiem „hmm?”, a lektor mówi, czego teraz potrzeba. Po 5 s bez ruchu właściwy składnik świeci. Po 8 s rączka-podpowiedź pokazuje gest. Po 10 s lektor powtarza polecenie.
 - **Liczenie bez cyfr.** „3 plasterki” to 3 kółka w przepisie, które się wypełniają, a lektor liczy na głos.
 - **Pieniądze zamiast naklejek.** Za każde danie klient płaci monetami (tyle, ile kroków miał przepis). Monety lecą do skarbonki, a obok widać ich liczbę.
@@ -34,12 +34,21 @@ Technika i styl są takie jak w Rybkach i Tropicielu: Canvas, czysty JS, lektor,
 | Smarowanie | masło, dżem, czekolada, sos, lukier | motoryka | ✅ |
 | Posypywanie | potrząsaj nad daniem (ser, posypka, cukier puder) | motoryka | ✅ |
 
-## 4. Stanowiska (każde ma 5 poziomów, przejście poziomu odblokowuje następny – jak krainy w Tropicielu)
+## 4. Stanowiska (każde ma 10 poziomów, przejście poziomu odblokowuje następny – jak krainy w Tropicielu)
 
-Mapa poziomów: 7 kolumn-stanowisk, w każdej 5 kółek z numerem. Zamknięte mają kłódkę, przejście daje monetę na kółku,
-kropki obok pokazują trudność. Trudność rośnie: więcej klientów (2→4), dłuższe przepisy, więcej sztuk do liczenia,
-od poziomu 3 nalewanie nie zatrzymuje się samo przy kresce i węższy jest zakres „w sam raz”, dłuższe smażenie/pieczenie,
-podpowiedzi pojawiają się później.
+Mapa poziomów: na górze zakładki **Łatwy** / **Trudny** (osobny postęp), pod nimi 7 kolumn-stanowisk, w każdej 10 kółek
+ułożonych wężykiem. Zamknięte mają kłódkę, przejście daje monetę na kółku. Trudność rośnie: więcej klientów (2→4),
+dłuższe przepisy, więcej sztuk do liczenia, od poziomu 5 nalewanie nie zatrzymuje się samo przy kresce, od 7 węższy
+zakres „w sam raz”, dłuższe smażenie/pieczenie, podpowiedzi pojawiają się później, więcej monet.
+
+### Tryb trudny
+- Zostaje obrazkowy przepis po lewej (ptaszek, gdy składnik został użyty – bez sprawdzania liczby, kropki się nie wypełniają).
+- Lektor mówi tylko zamówienie klienta (stuknięcie w przepis je powtarza). Nie liczy plasterków ani obrotów łyżki, nie ma rączki ani świecącej skrzynki.
+- Nic nie jest blokowane: każdy składnik można położyć, warzywo kroi się tyle razy, ile dziecko stuknie (plasterki spadają na danie po chwili bez stukania).
+- Mieszanie: łyżka leży obok naczynia. Gotowanie i smażenie: płomyk przy garnku/patelni. Nieprzewrócony naleśnik i niewyjęta z piekarnika pizza/muffinka się przypalają.
+- Danie można podać w każdej chwili. Klient sprawdza składniki i ich liczbę, smarowanie, posypanie, poziom płynu, liczbę obrotów (n albo n+1), ugotowanie/upieczenie i kolejność gałek lodów.
+- Złe danie: klient jest smutny i odchodzi bez płacenia (smutna buźka na pasku klientów). Poziom zaliczony, gdy zadowolona jest co najmniej połowa klientów; gwiazdki: 3 = wszyscy, 2 = zaliczony, inaczej przycisk „jeszcze raz”.
+- Dobre danie w trybie trudnym daje 1 monetę więcej.
 
 | # | Stanowisko | Dania | Czynności |
 |---|---|---|---|
@@ -81,13 +90,14 @@ podpowiedzi pojawiają się później.
 - Web Audio do efektów (dzwonek, chrupanie, krojenie, monety, fanfary).
 - Pointer Events: mysz, palec i rysik.
 - PWA: `manifest.webmanifest`, `sw.js` (najpierw sieć, bez sieci kopia), ikony 192/512/maskable.
-- `localStorage`: `kuchcik-prog` (odblokowany poziom i przejścia), `kuchcik-money`, `kuchcik-sound`.
-- Konsola testowa: `__kuchcik.startGame()`, `__kuchcik.loadLevel(n)` (0–34), `__kuchcik.step(sek)`, `__kuchcik.auto()` (wykonuje bieżący krok przepisu), `__kuchcik.unlockAll()`.
+- `localStorage`: `kuchcik-prog2` / `kuchcik-prog2-trudny` (odblokowany poziom i przejścia w każdym trybie; stary `kuchcik-prog` z 5 poziomami na stanowisko jest przeliczany), `kuchcik-tryb`, `kuchcik-money`, `kuchcik-sound`.
+- Konsola testowa: `__kuchcik.startGame()`, `__kuchcik.loadLevel(n)` (0–69), `__kuchcik.step(sek)`, `__kuchcik.auto()` (wykonuje bieżący krok przepisu), `__kuchcik.unlockAll()`, `__kuchcik.setHard(true)`, `__kuchcik.serveMade(dobre)` (tryb trudny: podaje gotowe dobre albo złe danie).
 
 ## 8. Etapy
 1. ✅ **Prototyp:** kuchnia z kanapkami, 4 przepisy, klienci-ludzie, monety i skarbonka, podpowiedzi, koniec poziomu.
 2. ✅ Nowa szata graficzna (kanwa projektowa), logo, skarbonka i monety.
 3. ✅ 7 stanowisk po 5 poziomów z rosnącą trudnością, mapa poziomów z odblokowywaniem.
+3a. ✅ 10 poziomów na stanowisko, nowe przepisy, tryb trudny (bez podpowiedzi i blokad, niezadowoleni klienci).
 4. ⏳ Test z dzieckiem: czy smarowanie, mieszanie, nalewanie i przewracanie są wykonalne, i czy tempo lektora pasuje.
 5. ⏳ Tryb normalny (kolejka klientów, dwa stanowiska naraz).
 6. ⏳ Sklep za monety, szafa, wystrój, tryb swobodny.

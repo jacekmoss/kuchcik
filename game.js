@@ -3,8 +3,9 @@
    Canvas + czysty JavaScript, bez bibliotek. Świat gry ma 1280×720 jednostek i skaluje się do ekranu.
    Obrazki pochodzą z assets.js (SVG generowane przez tools/gen_assets.py) i są raz rasteryzowane do pamięci.
    Klient przychodzi do lady i pokazuje w dymku obrazek dania. Dziecko robi je według obrazkowego przepisu
-   (lewy pasek), podaje klientowi i dostaje monety do skarbonki. 7 stanowisk po 5 poziomów;
-   przejście poziomu odblokowuje kolejny. */
+   (lewy pasek), podaje klientowi i dostaje monety do skarbonki. 7 stanowisk po 10 poziomów;
+   przejście poziomu odblokowuje kolejny. Dwa tryby z osobnym postępem: łatwy (lektor prowadzi krok po kroku,
+   zły składnik odskakuje) i trudny (bez podpowiedzi i blokad – złe danie rozczarowuje klienta, który nie płaci). */
 (() => {
   const W = 1280, H = 720;
   const COUNTER_Y = 330;
@@ -237,49 +238,82 @@
       id: 'kanapki', name: 'Kanapki', icon: 'chleb', left: 'deska',
       crates: ['chleb', 'maslo', 'ser', 'szynka', 'salata', 'pomidor', 'ogorek'],
       recipes: {
+        maslo: { dish: 'kanapka', order: 'kanapkę z masłem', steps: [['place', 'chleb'], ['smear', 'maslo']] },
         ser: { dish: 'kanapka', order: 'kanapkę z serem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'ser']] },
+        szynka_ser: { dish: 'kanapka', order: 'kanapkę z szynką i serem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'szynka'], ['place', 'ser']] },
         szynka: { dish: 'kanapka', order: 'kanapkę z sałatą i szynką', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'salata'], ['place', 'szynka']] },
+        ogorek2: { dish: 'kanapka', order: 'kanapkę z ogórkiem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['cut', 'ogorek', 2]] },
         pomidor: { dish: 'kanapka', order: 'kanapkę z pomidorem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['cut', 'pomidor', 3]] },
+        salata_pom: { dish: 'kanapka', order: 'kanapkę z sałatą i pomidorem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'salata'], ['cut', 'pomidor', 2]] },
         ogorek: { dish: 'kanapka', order: 'kanapkę z serem i ogórkiem', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'ser'], ['cut', 'ogorek', 4]] },
-        wielka: { dish: 'kanapka', order: 'wielką kanapkę ze wszystkim', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'salata'], ['place', 'szynka'], ['cut', 'pomidor', 3]] },
+        wielka: { dish: 'kanapka', order: 'wielką kanapkę', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'salata'], ['place', 'szynka'], ['cut', 'pomidor', 3]] },
+        mega: { dish: 'kanapka', order: 'kanapkę ze wszystkim', steps: [['place', 'chleb'], ['smear', 'maslo'], ['place', 'salata'], ['place', 'ser'], ['cut', 'pomidor', 2], ['cut', 'ogorek', 3]] },
       },
-      levels: [['ser', 'ser'], ['ser', 'szynka', 'ser'], ['pomidor', 'szynka', 'ser'], ['ogorek', 'pomidor', 'szynka'], ['wielka', 'ogorek', 'pomidor', 'szynka']],
+      levels: [
+        ['maslo', 'ser'], ['ser', 'szynka_ser'], ['ser', 'szynka', 'maslo'], ['ogorek2', 'pomidor', 'ser'], ['szynka', 'pomidor', 'szynka_ser'],
+        ['ogorek', 'salata_pom', 'ser'], ['wielka', 'pomidor', 'ogorek2'], ['ogorek', 'salata_pom', 'szynka_ser', 'pomidor'],
+        ['wielka', 'ogorek', 'salata_pom', 'szynka'], ['mega', 'wielka', 'ogorek', 'salata_pom'],
+      ],
     },
     {
       id: 'owoce', name: 'Owocowy bar', icon: 'truskawka', left: 'deska',
       crates: ['banan', 'truskawka', 'winogrona', 'mleko', 'jogurt'],
       recipes: {
         banany: { dish: 'miska', order: 'miseczkę bananów', steps: [['cut', 'banan', 3], ['stir', 1]] },
+        truskawki: { dish: 'miska', order: 'miseczkę truskawek', steps: [['cut', 'truskawka', 4], ['stir', 1]] },
         salatka: { dish: 'miska', order: 'sałatkę owocową', steps: [['cut', 'banan', 3], ['place', 'winogrona', 3], ['stir', 2]] },
+        winogrona: { dish: 'miska', order: 'sałatkę z winogronami', steps: [['place', 'winogrona', 4], ['cut', 'banan', 2], ['stir', 1]] },
         tecza: { dish: 'miska', order: 'tęczową sałatkę owocową', steps: [['cut', 'banan', 3], ['cut', 'truskawka', 3], ['place', 'winogrona', 3], ['stir', 2]] },
         jogurt: { dish: 'miska', order: 'jogurt z owocami', steps: [['pour', 'jogurt', .6], ['cut', 'truskawka', 3], ['place', 'winogrona', 2]] },
+        jogurt_b: { dish: 'miska', order: 'jogurt z bananem', steps: [['pour', 'jogurt', .5], ['cut', 'banan', 2], ['place', 'winogrona', 3]] },
         koktajl_t: { dish: 'szklanka', order: 'koktajl truskawkowy', mix: '#F7A8BC', steps: [['pour', 'mleko', .6], ['place', 'truskawka', 3], ['stir', 2]] },
         koktajl_b: { dish: 'szklanka', order: 'koktajl bananowy', mix: '#FFE9A0', steps: [['pour', 'mleko', .6], ['cut', 'banan', 3], ['stir', 2]] },
+        koktajl_mix: { dish: 'szklanka', order: 'koktajl truskawkowo-bananowy', mix: '#F9C4A0', steps: [['pour', 'mleko', .5], ['place', 'truskawka', 2], ['cut', 'banan', 2], ['stir', 3]] },
       },
-      levels: [['banany', 'salatka'], ['salatka', 'koktajl_t', 'banany'], ['jogurt', 'koktajl_t', 'salatka'], ['tecza', 'koktajl_b', 'jogurt'], ['tecza', 'koktajl_t', 'koktajl_b', 'jogurt']],
+      levels: [
+        ['banany', 'truskawki'], ['salatka', 'banany'], ['salatka', 'koktajl_t', 'truskawki'], ['jogurt', 'koktajl_b', 'banany'],
+        ['winogrona', 'jogurt', 'koktajl_t'], ['tecza', 'koktajl_b', 'salatka'], ['jogurt_b', 'tecza', 'koktajl_t'],
+        ['koktajl_mix', 'jogurt', 'winogrona', 'salatka'], ['tecza', 'koktajl_mix', 'jogurt_b', 'koktajl_b'], ['koktajl_mix', 'tecza', 'jogurt_b', 'jogurt'],
+      ],
     },
     {
       id: 'lody', name: 'Lodziarnia', icon: 'lody_t', left: 'deska',
       crates: ['lody_t', 'lody_c', 'lody_v', 'posypka', 'czekolada', 'wafelek', 'wisienka'],
       recipes: {
         jedna: { dish: 'rozek', order: 'loda truskawkowego', steps: [['place', 'lody_t']] },
+        wanilia: { dish: 'rozek', order: 'loda waniliowego', steps: [['place', 'lody_v']] },
         dwie: { dish: 'rozek', order: 'loda czekoladowo-waniliowego', steps: [['place', 'lody_c'], ['place', 'lody_v']] },
         posypka: { dish: 'rozek', order: 'loda z posypką', steps: [['place', 'lody_v'], ['place', 'lody_t'], ['sprinkle', 'posypka']] },
+        trzy: { dish: 'rozek', order: 'loda z trzema gałkami', steps: [['place', 'lody_t'], ['place', 'lody_v'], ['place', 'lody_c']] },
+        polewa: { dish: 'rozek', order: 'loda z polewą i wisienką', steps: [['place', 'lody_v'], ['smear', 'czekolada'], ['place', 'wisienka']] },
         wafel: { dish: 'rozek', order: 'loda z wafelkiem i wisienką', steps: [['place', 'lody_t'], ['place', 'lody_c'], ['place', 'wafelek'], ['place', 'wisienka']] },
+        czekoladowy: { dish: 'rozek', order: 'podwójnego loda czekoladowego', steps: [['place', 'lody_c'], ['place', 'lody_c'], ['smear', 'czekolada'], ['sprinkle', 'posypka']] },
+        tecza3: { dish: 'rozek', order: 'kolorowego loda z wafelkiem', steps: [['place', 'lody_t'], ['place', 'lody_v'], ['place', 'lody_c'], ['sprinkle', 'posypka'], ['place', 'wafelek']] },
         wielki: { dish: 'rozek', order: 'wielkiego loda ze wszystkim', steps: [['place', 'lody_c'], ['place', 'lody_v'], ['place', 'lody_t'], ['smear', 'czekolada'], ['sprinkle', 'posypka'], ['place', 'wisienka']] },
       },
-      levels: [['jedna', 'dwie'], ['dwie', 'jedna', 'posypka'], ['posypka', 'wafel', 'dwie'], ['wafel', 'wielki', 'posypka'], ['wielki', 'wafel', 'posypka', 'dwie']],
+      levels: [
+        ['jedna', 'wanilia'], ['dwie', 'jedna'], ['dwie', 'posypka', 'wanilia'], ['trzy', 'polewa', 'dwie'], ['wafel', 'posypka', 'trzy'],
+        ['polewa', 'czekoladowy', 'wafel'], ['tecza3', 'trzy', 'posypka'], ['wielki', 'czekoladowy', 'wafel', 'polewa'],
+        ['tecza3', 'wielki', 'trzy', 'posypka'], ['wielki', 'tecza3', 'czekoladowy', 'wafel'],
+      ],
     },
     {
       id: 'nalesniki', name: 'Naleśnikarnia', icon: 'ciasto_n_box', left: 'deska',
       crates: ['ciasto_n', 'dzem', 'czekolada', 'banan', 'truskawka', 'cukier'],
       recipes: {
+        cukier: { dish: 'nalesnik', order: 'naleśnika z cukrem pudrem', steps: [['pour', 'ciasto_n', .8], ['cook'], ['sprinkle', 'cukier']] },
         dzem: { dish: 'nalesnik', order: 'naleśnika z dżemem', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'dzem']] },
+        banan: { dish: 'nalesnik', order: 'naleśnika z dżemem i bananem', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'dzem'], ['cut', 'banan', 3]] },
         czekolada: { dish: 'nalesnik', order: 'naleśnika z czekoladą i bananem', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'czekolada'], ['cut', 'banan', 3]] },
         truskawki: { dish: 'nalesnik', order: 'naleśnika z truskawkami', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'dzem'], ['cut', 'truskawka', 3], ['sprinkle', 'cukier']] },
+        czek_trusk: { dish: 'nalesnik', order: 'naleśnika z czekoladą i truskawkami', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'czekolada'], ['cut', 'truskawka', 4], ['sprinkle', 'cukier']] },
         wielki: { dish: 'nalesnik', order: 'wielkiego naleśnika ze wszystkim', steps: [['pour', 'ciasto_n', .8], ['cook'], ['smear', 'czekolada'], ['cut', 'banan', 3], ['cut', 'truskawka', 2], ['sprinkle', 'cukier']] },
       },
-      levels: [['dzem', 'dzem'], ['dzem', 'czekolada', 'dzem'], ['truskawki', 'czekolada', 'dzem'], ['wielki', 'truskawki', 'czekolada'], ['wielki', 'truskawki', 'czekolada', 'dzem']],
+      levels: [
+        ['cukier', 'dzem'], ['dzem', 'cukier'], ['dzem', 'czekolada', 'cukier'], ['banan', 'czekolada', 'dzem'], ['truskawki', 'banan', 'cukier'],
+        ['czekolada', 'truskawki', 'banan'], ['czek_trusk', 'truskawki', 'dzem'], ['wielki', 'czek_trusk', 'banan', 'cukier'],
+        ['wielki', 'truskawki', 'czek_trusk', 'czekolada'], ['wielki', 'czek_trusk', 'truskawki', 'banan'],
+      ],
     },
     {
       id: 'pizza', name: 'Pizzeria', icon: 'salami', left: 'piekarnik',
@@ -287,40 +321,63 @@
       recipes: {
         margherita: { dish: 'pizza', order: 'pizzę z serem', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['bake']] },
         salami: { dish: 'pizza', order: 'pizzę z salami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'salami', 4], ['bake']] },
+        oliwki: { dish: 'pizza', order: 'pizzę z oliwkami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'oliwki', 4], ['bake']] },
+        pieczarki: { dish: 'pizza', order: 'pizzę z pieczarkami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'pieczarki', 3], ['bake']] },
         grzybowa: { dish: 'pizza', order: 'pizzę z pieczarkami i oliwkami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'pieczarki', 3], ['place', 'oliwki', 3], ['bake']] },
+        salami_ol: { dish: 'pizza', order: 'pizzę z salami i oliwkami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'salami', 3], ['place', 'oliwki', 2], ['bake']] },
+        duza_salami: { dish: 'pizza', order: 'pizzę z dużą ilością salami', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'salami', 6], ['bake']] },
         wszystko: { dish: 'pizza', order: 'pizzę ze wszystkim', steps: [['place', 'ciasto_p'], ['smear', 'sos'], ['sprinkle', 'sertarty'], ['place', 'salami', 3], ['place', 'pieczarki', 3], ['place', 'oliwki', 3], ['bake']] },
       },
-      levels: [['margherita', 'margherita'], ['margherita', 'salami', 'margherita'], ['salami', 'grzybowa', 'margherita'], ['grzybowa', 'wszystko', 'salami'], ['wszystko', 'grzybowa', 'salami', 'margherita']],
+      levels: [
+        ['margherita', 'margherita'], ['margherita', 'salami'], ['salami', 'oliwki', 'margherita'], ['pieczarki', 'salami', 'oliwki'],
+        ['grzybowa', 'pieczarki', 'margherita'], ['salami_ol', 'grzybowa', 'salami'], ['duza_salami', 'salami_ol', 'oliwki'],
+        ['wszystko', 'grzybowa', 'salami_ol', 'pieczarki'], ['wszystko', 'duza_salami', 'grzybowa', 'salami_ol'], ['wszystko', 'salami_ol', 'duza_salami', 'grzybowa'],
+      ],
     },
     {
       id: 'zupy', name: 'Zupy', icon: 'marchewka', left: 'deska',
       crates: ['woda', 'marchewka', 'ziemniak', 'groszek', 'makaron', 'pomidor'],
       recipes: {
         marchewkowa: { dish: 'zupa', order: 'zupę marchewkową', mix: '#F4A04A', steps: [['pour', 'woda', .6], ['cut', 'marchewka', 3], ['stir', 2], ['cook']] },
+        ziemniaczana: { dish: 'zupa', order: 'zupę ziemniaczaną', mix: '#EAD9A8', steps: [['pour', 'woda', .6], ['cut', 'ziemniak', 3], ['stir', 2], ['cook']] },
         rosol: { dish: 'zupa', order: 'rosół z makaronem', mix: '#F2D27A', steps: [['pour', 'woda', .6], ['cut', 'marchewka', 2], ['place', 'makaron', 2], ['stir', 2], ['cook']] },
+        grochowa: { dish: 'zupa', order: 'zupę z groszkiem', mix: '#B8CF6A', steps: [['pour', 'woda', .6], ['place', 'groszek', 3], ['cut', 'marchewka', 2], ['stir', 2], ['cook']] },
         pomidorowa: { dish: 'zupa', order: 'zupę pomidorową', mix: '#E0533C', steps: [['pour', 'woda', .6], ['cut', 'pomidor', 3], ['place', 'makaron', 2], ['stir', 3], ['cook']] },
         jarzynowa: { dish: 'zupa', order: 'zupę jarzynową', mix: '#E8C26A', steps: [['pour', 'woda', .6], ['cut', 'marchewka', 3], ['cut', 'ziemniak', 3], ['place', 'groszek', 2], ['stir', 3], ['cook']] },
       },
-      levels: [['marchewkowa', 'marchewkowa'], ['marchewkowa', 'rosol', 'marchewkowa'], ['rosol', 'pomidorowa', 'marchewkowa'], ['pomidorowa', 'jarzynowa', 'rosol'], ['jarzynowa', 'pomidorowa', 'rosol', 'marchewkowa']],
+      levels: [
+        ['marchewkowa', 'ziemniaczana'], ['marchewkowa', 'rosol'], ['ziemniaczana', 'rosol', 'marchewkowa'], ['pomidorowa', 'grochowa', 'rosol'],
+        ['grochowa', 'ziemniaczana', 'pomidorowa'], ['jarzynowa', 'rosol', 'grochowa'], ['pomidorowa', 'jarzynowa', 'ziemniaczana'],
+        ['jarzynowa', 'grochowa', 'pomidorowa', 'rosol'], ['jarzynowa', 'pomidorowa', 'grochowa', 'ziemniaczana'], ['jarzynowa', 'grochowa', 'pomidorowa', 'rosol'],
+      ],
     },
     {
       id: 'cukiernia', name: 'Cukiernia', icon: 'muffin', left: 'piekarnik',
       crates: ['ciasto_m', 'lukier', 'posypka', 'wisienka', 'swieczka'],
       recipes: {
         zwykla: { dish: 'muffinka', order: 'muffinkę', steps: [['pour', 'ciasto_m', .7], ['bake']] },
+        wisienka: { dish: 'muffinka', order: 'muffinkę z wisienką', steps: [['pour', 'ciasto_m', .7], ['bake'], ['place', 'wisienka']] },
         lukier: { dish: 'muffinka', order: 'muffinkę z lukrem', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier']] },
+        posypka: { dish: 'muffinka', order: 'muffinkę z lukrem i posypką', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier'], ['sprinkle', 'posypka']] },
+        swieczki2: { dish: 'muffinka', order: 'muffinkę z dwiema świeczkami', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier'], ['place', 'swieczka', 2]] },
         kolorowa: { dish: 'muffinka', order: 'kolorową muffinkę z wisienką', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier'], ['sprinkle', 'posypka'], ['place', 'wisienka']] },
         urodzinowa: { dish: 'muffinka', order: 'urodzinową muffinkę ze świeczkami', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier'], ['sprinkle', 'posypka'], ['place', 'swieczka', 3]] },
+        urodzinowa4: { dish: 'muffinka', order: 'muffinkę z czterema świeczkami', steps: [['pour', 'ciasto_m', .7], ['bake'], ['smear', 'lukier'], ['sprinkle', 'posypka'], ['place', 'swieczka', 4]] },
       },
-      levels: [['zwykla', 'zwykla'], ['zwykla', 'lukier', 'zwykla'], ['lukier', 'kolorowa', 'zwykla'], ['kolorowa', 'urodzinowa', 'lukier'], ['urodzinowa', 'kolorowa', 'lukier', 'zwykla']],
+      levels: [
+        ['zwykla', 'wisienka'], ['lukier', 'zwykla'], ['lukier', 'wisienka', 'posypka'], ['posypka', 'swieczki2', 'lukier'], ['kolorowa', 'posypka', 'wisienka'],
+        ['swieczki2', 'kolorowa', 'lukier'], ['urodzinowa', 'swieczki2', 'posypka'], ['urodzinowa', 'kolorowa', 'swieczki2', 'wisienka'],
+        ['urodzinowa4', 'urodzinowa', 'kolorowa', 'posypka'], ['urodzinowa4', 'urodzinowa', 'kolorowa', 'swieczki2'],
+      ],
     },
   ];
-  const LEVELS_PER = 5, TOTAL_LEVELS = CHAPTERS.length * LEVELS_PER;
+  const LEVELS_PER = 10, TOTAL_LEVELS = CHAPTERS.length * LEVELS_PER;
   const DISH_ACC = { kanapka: 'kanapkę', miska: 'miseczkę', szklanka: 'koktajl', rozek: 'loda', nalesnik: 'naleśnika', pizza: 'pizzę', zupa: 'zupę', muffinka: 'muffinkę' };
-  /* trudność rośnie z numerem poziomu w stanowisku (0–4) */
-  const diff = (li) => ({
-    autoPour: li < 2, band: li < 3 ? 0.13 : 0.08, hintAt: 4 + li, cook: 3.5 + li * 0.5,
-    sprinkle: 26 + li * 6, coinsBonus: li >= 3 ? 1 : 0,
+  /* trudność rośnie z numerem poziomu w stanowisku (0–9); tryb trudny: bez podpowiedzi lektora i bez blokad –
+     dziecko samo liczy i może zrobić złe danie, nalewanie nigdy nie zatrzymuje się samo, węższy zakres „w sam raz” */
+  const diff = (li, hard) => ({
+    autoPour: !hard && li < 4, band: hard ? (li < 5 ? 0.09 : 0.07) : li < 6 ? 0.13 : 0.09,
+    hintAt: 4 + li * 0.5, cook: 3.5 + li * 0.25, sprinkle: 26 + li * 3, coinsBonus: (li >= 6 ? 1 : 0) + (hard ? 1 : 0),
   });
 
   // ---------- naczynia: miejsce na blacie, obszary smarowania i kładzenia ----------
@@ -392,21 +449,29 @@
   }
   function newDish(type) {
     return { type, base: !(type === 'kanapka' || type === 'pizza'), layers: [], smears: [], sprinkles: [], fill: 0, mixK: 0,
-      swirl: 0, cooked: 0, flipped: false, flipT: 0, onPlate: false, baked: false, groups: 0, pop: 0, mix: null, bubbles: 0 };
+      swirl: 0, cooked: 0, flipped: false, flipT: 0, onPlate: false, baked: false, groups: 0, pop: 0, mix: null, bubbles: 0,
+      liquidIng: null, mixedLiquid: false, stirAcc: 0, turns: 0, burnt: false };
   }
   /* nowy kawałek na naczyniu (i-ty z n w tej grupie) */
   function addLayer(D, ing, kind, i, n, pop = 1) {
     const I = ING[ing];
-    const L = { ing, kind, ux: 0, uy: 0, rot: rand(-0.3, 0.3), pop };
+    const L = { ing, kind, ux: 0, uy: 0, rot: rand(-0.3, 0.3), pop, g: D.groups };
     if (I.whole) L.rot = ing === 'ser' ? -0.07 : ing === 'szynka' ? 0.1 : 0;
     else if (D.type === 'rozek' || D.type === 'muffinka') L.rot = 0;
-    else {
-      const p = ringPts(n)[i] || [0, 0], a = D.groups * 0.9 + 0.3;
-      L.ux = p[0] * Math.cos(a) - p[1] * Math.sin(a); L.uy = p[0] * Math.sin(a) + p[1] * Math.cos(a);
-    }
-    if (D.type === 'muffinka') { L.ux = n === 1 ? 0 : (i - (n - 1) / 2) * 0.9; }
+    placeLayer(D, L, i, n);
     D.layers.push(L);
     return L;
+  }
+  function placeLayer(D, L, i, n) {
+    if (ING[L.ing].whole || D.type === 'rozek') return;
+    if (D.type === 'muffinka') { L.ux = n === 1 ? 0 : (i - (n - 1) / 2) * 0.9; L.uy = 0; return; }
+    const p = ringPts(n)[i] || [0, 0], a = L.g * 0.9 + 0.3;
+    L.ux = p[0] * Math.cos(a) - p[1] * Math.sin(a); L.uy = p[0] * Math.sin(a) + p[1] * Math.cos(a);
+  }
+  /* tryb trudny: liczba kawałków nie jest znana z góry – po każdym dołożeniu układamy całą grupę na nowo */
+  function relayout(D, ing, kind) {
+    const ls = D.layers.filter((l) => l.ing === ing && l.kind === kind);
+    ls.forEach((l, i) => { l.g = ls[0].g; placeLayer(D, l, i, Math.min(ls.length, 7)); if (i >= 7) { l.ux *= 0.5; l.uy *= 0.5; } });
   }
   function layerPos(D, L) {
     const I = ING[L.ing];
@@ -463,7 +528,7 @@
     switch (D.type) {
       case 'kanapka': {
         spr('talerz_maly');
-        if (!D.base) return;
+        if (!D.base) { D.layers.forEach((L) => drawLayer(D, L)); drawSprinkles(D); return; }
         ctx.save(); const k = 1 + 0.08 * D.pop; ctx.scale(k, k);
         spr('chleb');
         drawSmears(D, BREAD_IN);
@@ -552,7 +617,7 @@
       }
       case 'pizza': {
         spr('lopata');
-        if (!D.base) return;
+        if (!D.base) { D.layers.forEach((L) => drawLayer(D, L)); drawSprinkles(D); return; }
         const k = 1 + 0.06 * D.pop;
         ctx.save(); ctx.scale(k, k);
         const g = ctx.createRadialGradient(-20, -20, 10, 0, 0, 100);
@@ -625,7 +690,7 @@
         D.groups++;
         break;
       case 'cut': for (let i = 0; i < n; i++) addLayer(D, ing, 'slice', i, n, 0); D.groups++; break;
-      case 'smear': D.smears.push({ color: ING[ing].color, pts: [], cells: new Set(), full: true }); break;
+      case 'smear': D.smears.push({ ing, color: ING[ing].color, pts: [], cells: new Set(), full: true }); break;
       case 'sprinkle': {
         const a = areaOf(D), I = ING[ing];
         let seed = 7;
@@ -634,12 +699,12 @@
         let k = 0;
         while (k < 40) {
           const x = a.cx + (rnd() - 0.5) * 170, y = a.cy + (rnd() - 0.5) * 170;
-          if (tc.isPointInPath(a.path, x, y)) { D.sprinkles.push({ x, y, rot: rnd() * 6, c: I.sprinkle[k % I.sprinkle.length], shred: !!I.shreds }); k++; }
+          if (tc.isPointInPath(a.path, x, y)) { D.sprinkles.push({ ing, x, y, rot: rnd() * 6, c: I.sprinkle[k % I.sprinkle.length], shred: !!I.shreds }); k++; }
         }
         break;
       }
-      case 'pour': D.fill = n; D.liquid = ING[ing].pour; break;
-      case 'stir': D.mixK = 1; break;
+      case 'pour': D.fill = n; D.liquid = ING[ing].pour; D.liquidIng = ing; break;
+      case 'stir': D.mixK = 1; D.turns = ing || 1; break;
       case 'cook': D.cooked = 1; D.flipped = true; if (D.type === 'nalesnik') D.onPlate = true; break;
       case 'bake': D.baked = true; break;
     }
@@ -648,17 +713,19 @@
   // ---------- klienci (ludzie) ----------
   const SKINS = ['#F6D3B3', '#E9B48C', '#C98B5E', '#8D5A3B', '#FADCC4'];
   const LOOKS = [
-    { hair: 'long', hc: '#6B4226', shirt: '#E8775A', skin: 0, pitch: 1.2 },
+    { hair: 'long', hc: '#6B4226', shirt: '#E8775A', skin: 0, pitch: 1.2, f: true },
     { hair: 'short', hc: '#2E2A2A', shirt: '#5B8BD9', skin: 1, beard: true, pitch: 0.85 },
-    { hair: 'bun', hc: '#DCD8D2', shirt: '#A78BD0', skin: 4, glasses: true, pitch: 1.15 },
+    { hair: 'bun', hc: '#DCD8D2', shirt: '#A78BD0', skin: 4, glasses: true, pitch: 1.15, f: true },
     { hair: 'bald', hc: '#E2E0DA', shirt: '#6FAF7A', skin: 0, glasses: true, mustache: true, pitch: 0.75 },
     { hair: 'cap', hc: '#7A4B2A', cap: '#E04848', shirt: '#F2C744', skin: 2, kid: true, pitch: 1.5 },
-    { hair: 'pigtails', hc: '#D9772E', shirt: '#F28DB2', skin: 4, kid: true, pitch: 1.6 },
-    { hair: 'curly', hc: '#1F1A1A', shirt: '#3FB0A8', skin: 3, pitch: 1.1 },
+    { hair: 'pigtails', hc: '#D9772E', shirt: '#F28DB2', skin: 4, kid: true, pitch: 1.6, f: true },
+    { hair: 'curly', hc: '#1F1A1A', shirt: '#3FB0A8', skin: 3, pitch: 1.1, f: true },
     { hair: 'short', hc: '#E3B85C', shirt: '#E9B44C', skin: 0, pitch: 0.95 },
   ];
   const PRAISE = ['Super!', 'Brawo!', 'Świetnie!', 'Pięknie!', 'Ekstra!'];
   const THANKS = ['Mniam, pyszne! Dziękuję!', 'Ale smaczne! Dziękuję bardzo!', 'Pycha! Proszę, oto pieniążki.'];
+  const SAD = ['Ojej, to nie jest moje zamówienie.', 'Hmm, to nie to, o co prosiłam.', 'Oj, nie tak miało być. Do widzenia.'];
+  const SAD_M = ['Ojej, to nie jest moje zamówienie.', 'Hmm, to nie to, o co prosiłem.', 'Oj, nie tak miało być. Do widzenia.'];
   const NUM = ['', 'Jeden', 'Dwa', 'Trzy', 'Cztery', 'Pięć', 'Sześć'];
 
   // ---------- układ sceny ----------
@@ -687,9 +754,19 @@
   }
 
   // ---------- stan gry ----------
-  const prog = store.get('kuchcik-prog', { unlocked: 0, done: {} });
+  /* postęp osobno dla trybu łatwego i trudnego; stary zapis (5 poziomów na stanowisko) przeliczamy na 10 */
+  const PROG = { easy: store.get('kuchcik-prog2', null), hard: store.get('kuchcik-prog2-trudny', { unlocked: 0, done: {} }) };
+  if (!PROG.easy) {
+    const old = store.get('kuchcik-prog', null);
+    PROG.easy = { unlocked: 0, done: {} };
+    if (old && old.unlocked) {
+      PROG.easy.unlocked = Math.floor(old.unlocked / 5) * 10 + (old.unlocked % 5) * 2;
+      for (let i = 0; i < PROG.easy.unlocked; i++) PROG.easy.done[i] = true;
+    }
+  }
   const S = {
-    scene: 'title', money: store.get('kuchcik-money', 0), lv: 0, ch: CHAPTERS[0], li: 0, df: diff(0),
+    scene: 'title', money: store.get('kuchcik-money', 0), lv: 0, ch: CHAPTERS[0], li: 0, df: diff(0, false),
+    hard: store.get('kuchcik-tryb', 'easy') === 'hard', results: [],
     queue: [], served: 0, cust: null, nextCustT: 0, recipe: null, R: null, steps: [], stepIdx: 0,
     D: newDish('kanapka'), dishHidden: false, cut: { phase: 'drop', veg: null, slices: 0, n: 0, cool: 0, knifeT: 0 },
     proc: null, pourT: 0, stir: null, sprinkleN: 0,
@@ -700,6 +777,8 @@
   const anim = (dur, draw, end) => fx.push({ t: 0, dur, draw, end });
   const later = (t, fn) => timers.push({ t, fn });
   const curStep = () => S.steps[S.stepIdx];
+  const progOf = () => (S.hard ? PROG.hard : PROG.easy);
+  const saveProg = () => { store.set('kuchcik-prog2', PROG.easy); store.set('kuchcik-prog2-trudny', PROG.hard); };
   const canAct = () => S.scene === 'play' && S.cust && (S.cust.phase === 'order' || S.cust.phase === 'wait') && S.stepIdx < S.steps.length;
 
   function stepsOf(R) {
@@ -752,14 +831,14 @@
   }
   function startLevel(lv) {
     const L = levelOf(lv);
-    S.lv = lv; S.ch = L.ch; S.li = L.li; S.df = diff(L.li);
+    S.lv = lv; S.ch = L.ch; S.li = L.li; S.df = diff(L.li, S.hard); S.results = [];
     layoutBins(S.ch);
     S.scene = 'play';
     S.queue = S.ch.levels[S.li].slice(); S.served = 0; S.cust = null; S.plate = null; S.drag = null;
     S.R = null; S.steps = []; fx.length = 0; timers.length = 0;
     resetBoard();
     S.nextCustT = 1.0;
-    mow(`${S.ch.name}. Poziom ${S.li + 1}.`);
+    mow(`${S.ch.name}. Poziom ${S.li + 1}.${S.hard ? ' Tryb trudny.' : ''}`);
   }
   function goMap() {
     S.scene = 'map'; S.mapT = 0; S.cust = null; S.drag = null; fx.length = 0; timers.length = 0;
@@ -806,11 +885,12 @@
   }
   const hitCtx = document.createElement('canvas').getContext('2d');
   function inArea(path, q) { return hitCtx.isPointInPath(path, q.x, q.y); }
-  function paint(p) {
+  function paint(p, ing) {
     const D = S.D, a = areaOf(D), q = toDish(p);
-    let sm = D.smears[D.smears.length - 1];
-    if (!sm || sm.full || sm.ing !== curStep().ing) {
-      sm = { ing: curStep().ing, color: ING[curStep().ing].color, pts: [], cells: new Set(), full: false };
+    if (D.smears.some((m) => m.full && m.ing === ing)) return;
+    let sm = D.smears.find((m) => !m.full && m.ing === ing);
+    if (!sm) {
+      sm = { ing, color: ING[ing].color, pts: [], cells: new Set(), full: false };
       D.smears.push(sm);
     }
     if (!inArea(a.path, q) && !a.cells.some((c) => Math.hypot(c.x - q.x, c.y - q.y) < 30)) return;
@@ -822,11 +902,11 @@
       sm.full = true;
       const d = S.drag; S.drag = null;
       if (d) flyBack(d);
-      completeStep();
+      if (S.hard) { sfx.drop(); D.smears.splice(D.smears.indexOf(sm), 1); D.smears.push(sm); } else completeStep();
     }
   }
   function sprinkle(p, d) {
-    const D = S.D, a = areaOf(D), I = ING[curStep().ing];
+    const D = S.D, a = areaOf(D), I = ING[d.ing];
     const q = toDish(p);
     if (!inArea(a.path, q) && Math.hypot(q.x - a.cx, q.y - a.cy) > 110) return;
     d.travel = (d.travel || 0) + (d.lastP ? dist(d.lastP, p) : 0); d.lastP = { x: p.x, y: p.y };
@@ -835,15 +915,15 @@
       for (let k = 0; k < 2; k++) {
         const x = q.x + rand(-26, 26), y = q.y + rand(-20, 30);
         if (!inArea(a.path, { x, y })) continue;
-        D.sprinkles.push({ x, y, rot: rand(0, 6), c: pick(I.sprinkle), shred: !!I.shreds });
-        S.sprinkleN++;
+        D.sprinkles.push({ ing: d.ing, x, y, rot: rand(0, 6), c: pick(I.sprinkle), shred: !!I.shreds });
+        S.sprinkleN++; d.n = (d.n || 0) + 1;
       }
       if (S.time - S.lastSwish > 0.12) { sfx.shake(); S.lastSwish = S.time; }
     }
-    if (S.sprinkleN >= S.df.sprinkle) {
+    if ((S.hard ? d.n : S.sprinkleN) >= S.df.sprinkle) {
       const dd = S.drag; S.drag = null;
       if (dd) flyBack(dd);
-      completeStep();
+      if (!S.hard) completeStep();
     }
   }
   function stirMove(p) {
@@ -859,6 +939,13 @@
     S.stir.last = ang;
     S.stir.acc += Math.abs(da);
     D.swirl += da * 0.5;
+    if (S.hard) {
+      D.stirAcc += Math.abs(da);
+      D.turns = Math.floor(D.stirAcc / (Math.PI * 2));
+      D.mixK = clamp(D.stirAcc / (Math.PI * 4), D.mixK, 1);
+      if (Math.abs(da) > 0.05 && S.time - S.lastSwish > 0.15) { sfx.stir(); S.lastSwish = S.time; }
+      return;
+    }
     D.mixK = clamp(S.stir.acc / (Math.PI * 2 * st.n), 0, 1);
     if (Math.abs(da) > 0.05 && S.time - S.lastSwish > 0.15) { sfx.stir(); S.lastSwish = S.time; }
     const turns = Math.floor(S.stir.acc / (Math.PI * 2));
@@ -885,13 +972,18 @@
   function chop() {
     const c = S.cut;
     if (c.cool > 0 || c.phase !== 'chop') return;
-    c.slices++; c.cool = 0.3; c.knifeT = 0.2;
+    c.slices++; c.cool = 0.3; c.knifeT = 0.2; c.idleT = 0;
     sfx.chop();
-    mow(NUM[c.slices] + '!');
+    if (!S.hard) mow(NUM[c.slices] + '!');
     crumbs(VEG_AT.x + 40, VEG_AT.y, '#FFE6C8', 6);
-    if (c.slices >= c.n) {
-      c.phase = 'done';
-      later(0.7, () => {
+    if (c.slices >= c.n) finishCut();
+  }
+  /* pokrojone plasterki lecą na danie (w trybie trudnym tyle, ile dziecko ukroiło) */
+  function finishCut() {
+    const c = S.cut;
+    c.n = c.slices;
+    c.phase = 'done';
+    later(S.hard ? 0.2 : 0.7, () => {
         const D = S.D;
         for (let i = 0; i < c.n; i++) {
           const from = sliceSpot(i);
@@ -908,21 +1000,31 @@
             }, () => {
               D.layers.push(L);
               sfx.drop();
-              if (i === c.n - 1) { D.groups++; c.phase = 'placed'; c.veg = null; completeStep(); }
+              if (i === c.n - 1) {
+                D.groups++; c.veg = null;
+                if (S.hard) { relayout(D, L.ing, 'slice'); c.phase = 'drop'; c.slices = 0; c.flown = 0; }
+                else { c.phase = 'placed'; completeStep(); }
+              }
             });
           });
         }
-      });
-    }
+    });
   }
   function sliceSpot(i) { return { x: LEFT.x + 205 + (i % 2) * 44, y: LEFT.y + 46 + Math.floor(i / 2) * 50 }; }
   function serve() {
+    const ok = !S.hard || judge(S.D, S.R);
     S.plate = { D: S.D, bites: 0 };
     S.D = newDish(S.D.type);
     S.stepIdx = S.steps.length;
-    S.cust.phase = 'eat'; S.cust.t = 0;
+    S.results.push(ok ? 'ok' : 'bad');
+    S.cust.t = 0;
     sfx.drop();
-    sparkle(CUST_X, COUNTER_Y - 10, 10);
+    if (ok) { S.cust.phase = 'eat'; sparkle(CUST_X, COUNTER_Y - 10, 10); return; }
+    S.cust.phase = 'sad'; S.cust.sad = true;
+    later(0.3, sfx.hmm);
+    const say = pick(S.cust.look.f ? SAD : SAD_M);
+    S.cust.talk = say.length * 0.06;
+    mowWiele([{ t: say, pitch: S.cust.look.pitch }]);
   }
   function payCoins(n) {
     const sx = S.cust.x, sy = COUNTER_Y - 110;
@@ -940,15 +1042,27 @@
   }
   function levelDone() {
     S.scene = 'done'; S.doneT = 0;
+    const n = S.results.length, good = S.results.filter((r) => r === 'ok').length;
+    /* tryb trudny: poziom zaliczony, gdy zadowolona jest co najmniej połowa klientów */
+    S.passed = good * 2 >= n;
+    S.stars = good === n ? 3 : S.passed ? 2 : good > 0 ? 1 : 0;
+    const money = ` Masz już ${S.money} ${odmiana(S.money, 'monetę', 'monety', 'monet')}!`;
+    if (!S.passed) {
+      sfx.hmm();
+      later(0.4, () => mow('Oj, za dużo klientów było niezadowolonych. Spróbuj jeszcze raz! Patrz dobrze na przepis.'));
+      return;
+    }
+    const prog = progOf();
     prog.done[S.lv] = true;
     prog.unlocked = Math.max(prog.unlocked, Math.min(TOTAL_LEVELS - 1, S.lv + 1));
-    store.set('kuchcik-prog', prog);
+    saveProg();
     sfx.fanfare();
     confetti();
     const last = S.lv === TOTAL_LEVELS - 1;
     const next = levelOf(S.lv + 1);
     const extra = last ? ' To już wszystkie poziomy, jesteś mistrzem kuchni!' : next.li === 0 ? ` Odblokowane nowe stanowisko: ${next.ch.name}!` : '';
-    later(0.4, () => mow(`Brawo! Wszyscy klienci są najedzeni.${extra} Masz już ${S.money} ${odmiana(S.money, 'monetę', 'monety', 'monet')}!`));
+    const head = good === n ? 'Brawo! Wszyscy klienci są zadowoleni.' : 'Dobrze! Prawie wszyscy klienci są zadowoleni.';
+    later(0.4, () => mow(head + extra + money));
   }
   function flyBack(d) {
     if (d.kind === 'dish') {
@@ -966,6 +1080,7 @@
     const d = S.drag; S.drag = null;
     if (!d) return;
     if (!canAct()) { flyBack(d); return; }
+    if (S.hard) { dropHard(p, d); return; }
     const st = curStep(), D = S.D;
     const onBoard = inRect(p, BOARD, 60), onLeft = inRect(p, LEFT, 60);
     if (d.kind === 'dish') {
@@ -1032,14 +1147,23 @@
     if ((S.scene === 'play' || S.scene === 'done') && Math.hypot(p.x - MAP_BTN.x, p.y - MAP_BTN.y) < MAP_BTN.r + 10) { goMap(); return; }
     if (S.scene === 'done') {
       if (S.doneT < 1) return;
-      if (S.lv < TOTAL_LEVELS - 1 && Math.hypot(p.x - (W / 2 + 80), p.y - 590) < 70) { startLevel(S.lv + 1); return; }
-      if (Math.hypot(p.x - (W / 2 - 80), p.y - 590) < 60 || S.lv === TOTAL_LEVELS - 1) goMap();
+      const last = S.lv === TOTAL_LEVELS - 1 && S.passed;
+      if (!last && Math.hypot(p.x - (W / 2 + 80), p.y - 590) < 70) { startLevel(S.passed ? S.lv + 1 : S.lv); return; }
+      if (Math.hypot(p.x - (W / 2 - 80), p.y - 590) < 60 || last) goMap();
       return;
     }
     S.idle = 0; S.hintSpoken = false;
     if (S.drag || !canAct()) return;
     const cl = cardLayout();
-    if (inRect(p, cl)) { mow(stepSay(curStep())); return; }
+    if (inRect(p, cl)) { mow(S.hard ? `Klient prosi o ${S.R.order}.` : stepSay(curStep())); return; }
+    if (S.hard) {
+      const dh = downHard(p);
+      if (!dh) return;
+      dh.x = p.x; dh.y = p.y; dh.id = e.pointerId;
+      S.drag = dh; sfx.pick();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      return;
+    }
     const st = curStep(), D = S.D;
     const onDish = inRect(p, BOARD, 20);
     let d = null;
@@ -1066,10 +1190,11 @@
     const p = toWorld(e);
     d.x = p.x; d.y = p.y;
     if (!canAct()) return;
+    if (S.hard) { moveHard(p, d); return; }
     const st = curStep();
     if (d.kind === 'stir' && st.type === 'stir') stirMove(p);
     if (d.kind === 'tool' && d.ing === st.ing) {
-      if (st.type === 'smear' && (S.D.base || S.D.type === 'rozek' || S.D.onPlate || S.D.baked)) paint(p);
+      if (st.type === 'smear' && (S.D.base || S.D.type === 'rozek' || S.D.onPlate || S.D.baked)) paint(p, d.ing);
       else if (st.type === 'sprinkle') sprinkle(p, d);
     }
   });
@@ -1083,19 +1208,232 @@
     o.phase = 'out';
     const a = dishAt();
     sparkle(a.x, a.y - 30, 16);
-    completeStep();
+    if (S.hard) { S.oven = null; sfx.drop(); } else completeStep();
+  }
+
+  // ---------- tryb trudny: dziecko robi danie samo, bez kroków i bez blokad ----------
+  const SPOON_AT = { x: 838, y: 646 };
+  const FLIP_WIN = 4, OVEN_WIN = 6;
+  const isBaseIng = (D, ing) => (ing === 'chleb' && D.type === 'kanapka') || (ing === 'ciasto_p' && D.type === 'pizza');
+  const needsBase = (D) => D.type === 'kanapka' || D.type === 'pizza';
+  const hasSpoon = () => S.hard && Object.values(S.ch.recipes).some((r) => r.steps.some((st) => st[0] === 'stir'));
+  const hasStove = () => S.hard && (S.D.type === 'nalesnik' || S.D.type === 'zupa');
+  const stoveAt = () => ({ x: dishAt().x + 150, y: dishAt().y - 92 });
+  /* czy da się coś położyć na wierzch (naleśnik dopiero na talerzu, muffinka dopiero upieczona) */
+  const canTop = (D) => (D.type === 'nalesnik' ? D.onPlate : D.type === 'muffinka' ? D.baked : true);
+  function canSmear(D) {
+    if (needsBase(D)) return D.base;
+    if (D.type === 'rozek') return scoopsOf(D) > 0;
+    if (D.type === 'nalesnik') return D.onPlate;
+    if (D.type === 'muffinka') return D.baked;
+    return false;
+  }
+  function pourable(D) {
+    if (D.fill >= 1) return false;
+    switch (D.type) {
+      case 'szklanka': case 'miska': return true;
+      case 'zupa': return !S.proc;
+      case 'nalesnik': return !S.proc && !D.onPlate && D.cooked === 0;
+      case 'muffinka': return !D.baked && !S.oven;
+    }
+    return false;
+  }
+  function pouringNow(d) {
+    if (!d || d.kind !== 'tool' || !ING[d.ing].pour || !canAct() || !inRect(d, BOARD, 40)) return false;
+    if (S.hard) return pourable(S.D);
+    const st = curStep();
+    return st.type === 'pour' && st.ing === d.ing;
+  }
+  const dishTouched = (D) => (needsBase(D) && D.base) || D.layers.length > 0 || D.smears.length > 0 || D.sprinkles.length > 0 || D.fill > 0.02;
+  function canBake(D) {
+    if (D.type === 'pizza') return D.base && !D.baked;
+    if (D.type === 'muffinka') return D.fill > 0.05 && !D.baked;
+    return false;
+  }
+  function lightStove() {
+    const D = S.D;
+    const ok = D.fill > 0.05 && (D.type === 'nalesnik' ? !D.onPlate && D.cooked === 0 : D.cooked < 1);
+    if (!ok) { sfx.lock(); return; }
+    startCook(); sfx.sizzle();
+  }
+  function downHard(p) {
+    const onDish = inRect(p, BOARD, 20), c = S.cut, P = S.proc, O = S.oven;
+    if (c.phase === 'chop' && inRect(p, LEFT, 30)) { chop(); return null; }
+    if (P && P.phase === 'flip' && onDish) { flip(); return null; }
+    if (O && O.phase === 'ready' && inRect(p, LEFT, 20)) { takeOut(); return null; }
+    if (hasStove() && !P && dist(p, stoveAt()) < 46) { lightStove(); return null; }
+    if (hasSpoon() && dist(p, SPOON_AT) < 58) { S.stir = null; return { kind: 'stir' }; }
+    if (onDish) {
+      if (P || O || S.dishHidden || c.phase === 'done') return null;
+      if (c.phase === 'chop' && c.slices > 0) { finishCut(); return null; }
+      return { kind: 'dish' };
+    }
+    const b = BINS.find((b) => inRect(p, b, 6));
+    if (!b) return null;
+    b.pop = 1;
+    return { kind: ING[b.ing].tool ? 'tool' : 'ing', ing: b.ing };
+  }
+  function moveHard(p, d) {
+    const I = ING[d.ing] || {};
+    if (d.kind === 'stir') stirMove(p);
+    else if (d.kind === 'tool' && I.color && canSmear(S.D)) paint(p, d.ing);
+    else if (d.kind === 'tool' && I.sprinkle && canTop(S.D) && !(needsBase(S.D) && !S.D.base)) sprinkle(p, d);
+  }
+  function dropHard(p, d) {
+    const D = S.D, onBoard = inRect(p, BOARD, 60);
+    const onLeft = inRect(p, LEFT, 40) && p.x < (LEFT.x + LEFT.w + BOARD.x) / 2;
+    if (d.kind === 'dish') {
+      if (inRect(p, SERVE_ZONE) && dishTouched(D)) { serve(); return; }
+      if (S.ch.left === 'piekarnik' && onLeft && !S.oven && canBake(D)) {
+        S.oven = { phase: 'baking', t: 0 }; S.dishHidden = true; sfx.drop();
+        return;
+      }
+      flyBack(d); return;
+    }
+    if (d.kind === 'stir') return;
+    if (d.kind === 'tool') { flyBack(d); return; }
+    const I = ING[d.ing], c = S.cut;
+    if (onLeft && I.slice && S.ch.left === 'deska') {
+      if (c.phase === 'drop' || (c.phase === 'chop' && c.slices === 0)) {
+        S.cut = { phase: 'chop', veg: d.ing, slices: 0, n: 6, cool: 0, knifeT: 0, flown: 0, idleT: 0 };
+        sfx.drop(); return;
+      }
+      flyBack(d); return;
+    }
+    if (onBoard && D.layers.length < 30 && canTop(D)) {
+      if (isBaseIng(D, d.ing) && !D.base) { D.base = true; D.pop = 1; D.groups++; }
+      else {
+        const same = D.layers.find((l) => l.ing === d.ing && l.kind === 'whole');
+        const g = same ? same.g : D.groups++;
+        const L = addLayer(D, d.ing, 'whole', 0, 1, 1);
+        L.g = g;
+        relayout(D, d.ing, 'whole');
+      }
+      sfx.drop(); return;
+    }
+    flyBack(d);
+  }
+  function updateHard(dt) {
+    const D = S.D, d = S.drag;
+    if (pouringNow(d)) {
+      if (D.liquidIng && D.liquidIng !== d.ing && D.fill > 0.02) D.mixedLiquid = true;
+      if (!D.liquidIng) { D.liquidIng = d.ing; D.liquid = ING[d.ing].pour; }
+      D.fill = Math.min(1, D.fill + dt * 0.28);
+      if (S.time - S.lastSwish > 0.16) { sfx.pour(); S.lastSwish = S.time; }
+    }
+    const c = S.cut;
+    if (c.phase === 'chop' && c.slices > 0) { c.idleT = (c.idleT || 0) + dt; if (c.idleT > 1.6) finishCut(); }
+    const P = S.proc;
+    if (P) {
+      if (P.phase === 'cook') {
+        P.t += dt;
+        if (D.type === 'nalesnik') { D.cooked = clamp(P.t / P.dur, 0, 1); if (Math.random() < dt * 3) sfx.sizzle(); }
+        else { D.bubbles = 1; if (Math.random() < dt * 6) sfx.bubble(); }
+        if (P.t >= P.dur) {
+          sfx.ding();
+          if (D.type === 'nalesnik') { P.phase = 'flip'; P.t = 0; }
+          else { D.cooked = 1; S.proc = null; }
+        }
+      } else if (P.phase === 'flip') {
+        /* nieprzewrócony na czas naleśnik się przypala */
+        P.t += dt;
+        if (P.t > FLIP_WIN && !D.burnt) { D.burnt = true; sfx.hmm(); }
+        if (D.burnt && Math.random() < dt * 8) smoke(dishAt().x + rand(-50, 50), dishAt().y - 20);
+        if (Math.random() < dt * 3) sfx.sizzle();
+      } else if (P.phase === 'flipping') {
+        P.t += dt; D.flipT = clamp(P.t / 0.6, 0, 1);
+        if (D.flipT >= 0.5 && !D.flipped) { D.flipped = true; D.cooked = 0.55; }
+        if (P.t >= 0.6) { D.flipT = 0; P.phase = 'cook2'; P.t = 0; }
+      } else if (P.phase === 'cook2') {
+        P.t += dt; D.cooked = lerp(0.55, 1, clamp(P.t / (P.dur * 0.5), 0, 1));
+        if (Math.random() < dt * 3) sfx.sizzle();
+        if (P.t >= P.dur * 0.5) { D.onPlate = true; D.pop = 1; S.proc = null; sfx.drop(); }
+      }
+    }
+    const O = S.oven;
+    if (O) {
+      O.t += dt;
+      if (O.phase === 'baking' && O.t >= S.df.cook + 0.5) { O.phase = 'ready'; O.t = 0; sfx.ding(); }
+      else if (O.phase === 'ready') {
+        if (O.t > OVEN_WIN && !D.burnt) { D.burnt = true; sfx.hmm(); }
+        if (D.burnt && Math.random() < dt * 8) smoke(LEFT.x + 140 + rand(-60, 60), LEFT.y + 40);
+      }
+    }
+  }
+  /* czy danie zgadza się z zamówieniem: te same składniki w tej samej liczbie, posmarowane, posypane,
+     nalane do kreski, zamieszane tyle razy, ile trzeba, ugotowane/upieczone i nieprzypalone; w lodach liczy się kolejność gałek */
+  function judge(D, R) {
+    let ok = true;
+    const need = (cond) => { if (!cond) ok = false; };
+    const want = {}, got = {};
+    let wantBase = false;
+    for (const [type, ing, n] of R.steps) {
+      if (type === 'place' && isBaseIng(D, ing)) { wantBase = true; continue; }
+      if (type === 'place' || type === 'cut') { const k = (type === 'cut' ? 'slice:' : 'whole:') + ing; want[k] = (want[k] || 0) + (n || 1); }
+    }
+    for (const L of D.layers) { const k = L.kind + ':' + L.ing; got[k] = (got[k] || 0) + 1; }
+    for (const k of new Set([...Object.keys(want), ...Object.keys(got)])) need(want[k] === got[k]);
+    if (needsBase(D)) need(D.base === wantBase);
+    const smW = R.steps.filter((st) => st[0] === 'smear').map((st) => st[1]);
+    for (const ing of smW) need(D.smears.some((m) => m.full && m.ing === ing));
+    for (const m of D.smears) if (!smW.includes(m.ing) && (m.full || m.cells.size > 8)) ok = false;
+    const spW = R.steps.filter((st) => st[0] === 'sprinkle').map((st) => st[1]), cnt = {};
+    for (const q of D.sprinkles) cnt[q.ing] = (cnt[q.ing] || 0) + 1;
+    for (const ing of spW) need((cnt[ing] || 0) >= 12);
+    for (const ing in cnt) if (!spW.includes(ing) && cnt[ing] > 6) ok = false;
+    const pour = R.steps.find((st) => st[0] === 'pour');
+    if (pour) need(D.liquidIng === pour[1] && !D.mixedLiquid && Math.abs(D.fill - pour[2]) <= S.df.band + 0.005);
+    else need(D.fill < 0.03);
+    const stir = R.steps.find((st) => st[0] === 'stir');
+    if (stir) need(D.turns >= stir[1] && D.turns <= stir[1] + 1);
+    if (R.steps.some((st) => st[0] === 'cook')) need(D.type === 'nalesnik' ? D.onPlate && !D.burnt : D.cooked >= 1);
+    if (R.steps.some((st) => st[0] === 'bake')) need(D.baked && !D.burnt);
+    if (D.type === 'rozek') {
+      const ws = R.steps.filter((st) => st[0] === 'place' && ING[st[1]].scoop).map((st) => st[1]).join();
+      need(ws === D.layers.filter((l) => ING[l.ing].scoop).map((l) => l.ing).join());
+    }
+    return ok;
+  }
+  /* przepis na karcie: w trybie trudnym ptaszek, gdy dziecko użyło tego składnika (bez sprawdzania liczby) */
+  function touched(st) {
+    const D = S.D;
+    switch (st.type) {
+      case 'place': return isBaseIng(D, st.ing) ? D.base : D.layers.some((l) => l.ing === st.ing && l.kind === 'whole');
+      case 'cut': return D.layers.some((l) => l.ing === st.ing && l.kind === 'slice');
+      case 'smear': return D.smears.some((m) => m.full && m.ing === st.ing);
+      case 'sprinkle': return D.sprinkles.some((q) => q.ing === st.ing);
+      case 'pour': return D.liquidIng === st.ing;
+      case 'stir': return D.turns > 0;
+      case 'cook': return D.type === 'nalesnik' ? D.onPlate : D.cooked >= 1;
+      case 'bake': return D.baked;
+    }
+    return false;
   }
 
   // ---------- mapa poziomów ----------
-  const MAP = { x0: 66, y0: 150, cw: 158, gap: 6, btnR: 30, btnY0: 330, btnDy: 74 };
+  const MAP = { x0: 66, y0: 150, cw: 158, gap: 6, btnR: 26, btnY0: 324, btnDy: 74, dx: 36 };
+  const TABS = { easy: { x: W / 2 - 250, y: 20, w: 236, h: 76 }, hard: { x: W / 2 + 14, y: 20, w: 236, h: 76 } };
   function mapCol(ci) { return MAP.x0 + ci * (MAP.cw + MAP.gap); }
+  /* poziomy idą wężykiem: 1 2 / 4 3 / 5 6 … */
+  function lvPos(ci, li) {
+    const r = Math.floor(li / 2), k = r % 2 === 0 ? li % 2 : 1 - (li % 2);
+    return { x: mapCol(ci) + MAP.cw / 2 + (k ? MAP.dx : -MAP.dx), y: MAP.btnY0 + r * MAP.btnDy };
+  }
+  function setMode(hard) {
+    if (S.hard === hard) return;
+    S.hard = hard; store.set('kuchcik-tryb', hard ? 'hard' : 'easy');
+    sfx.pick();
+    mow(hard ? 'Tryb trudny. Nikt nie podpowiada, liczysz sam. Klient sprawdzi, czy danie jest dobre.' : 'Tryb łatwy. Lektor podpowiada każdy krok.');
+  }
   function mapTap(p) {
     if (Math.hypot(p.x - 60, p.y - 50) < 36) { S.scene = 'title'; return; }
+    if (inRect(p, TABS.easy, 6)) { setMode(false); return; }
+    if (inRect(p, TABS.hard, 6)) { setMode(true); return; }
+    const prog = progOf();
     for (let ci = 0; ci < CHAPTERS.length; ci++) {
-      const cx = mapCol(ci) + MAP.cw / 2;
       for (let li = 0; li < LEVELS_PER; li++) {
-        const cy = MAP.btnY0 + li * MAP.btnDy;
-        if (Math.hypot(p.x - cx, p.y - cy) < MAP.btnR + 8) {
+        const q = lvPos(ci, li);
+        if (Math.hypot(p.x - q.x, p.y - q.y) < MAP.btnR + 8) {
           const lv = ci * LEVELS_PER + li;
           if (lv > prog.unlocked) { sfx.lock(); mow('Ten poziom jest jeszcze zamknięty. Najpierw przejdź poprzedni.'); return; }
           sfx.pick(); startLevel(lv); return;
@@ -1110,6 +1448,9 @@
       const a = rand(0, Math.PI * 2), v = rand(80, 260);
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, g: 200, life: rand(0.5, 0.9), max: 0.9, r: rand(5, 9), color: pick([C.gold, '#FFFFFF', C.coral, C.mint]), star: true });
     }
+  }
+  function smoke(x, y) {
+    parts.push({ x, y, vx: rand(-15, 15), vy: rand(-70, -40), g: -10, life: 1.2, max: 1.2, r: rand(8, 14), color: 'rgba(90,80,80,.45)' });
   }
   function crumbs(x, y, color, n) {
     for (let i = 0; i < n; i++) parts.push({ x, y, vx: rand(-120, 120), vy: rand(-220, -60), g: 700, life: rand(0.4, 0.7), max: 0.7, r: rand(3, 6), color });
@@ -1149,9 +1490,10 @@
     if (S.scene !== 'play') return;
     updateCustomer(dt);
     if (!canAct()) return;
+    if (S.hard) { updateHard(dt); return; }
     const st = curStep(), D = S.D, d = S.drag;
     // nalewanie
-    if (st.type === 'pour' && d && d.kind === 'tool' && d.ing === st.ing && inRect(d, BOARD, 40)) {
+    if (pouringNow(d)) {
       if (!D.liquid) D.liquid = ING[st.ing].pour;
       D.fill = Math.min(1, D.fill + dt * 0.28);
       S.idle = 0;
@@ -1209,7 +1551,7 @@
           c.x = CUST_X; c.phase = 'order'; c.t = 0;
           const say = `Dzień dobry! Poproszę ${S.R.order}.`;
           c.talk = say.length * 0.065;
-          mowWiele([{ t: say, pitch: c.look.pitch }, stepSay(curStep())]);
+          mowWiele([{ t: say, pitch: c.look.pitch }, S.hard ? null : stepSay(curStep())]);
         }
         break;
       case 'order':
@@ -1230,6 +1572,9 @@
       case 'happy':
         if (c.t > 2.9) { c.phase = 'leave'; c.t = 0; S.plate = null; }
         break;
+      case 'sad':
+        if (c.t > 3.4) { c.phase = 'leave'; c.t = 0; S.plate = null; }
+        break;
       case 'leave':
         c.walk += dt; c.x += 420 * dt;
         if (c.x > W + 160) {
@@ -1239,7 +1584,7 @@
         }
         break;
     }
-    const showBubble = c.phase === 'order' || c.phase === 'wait' || c.phase === 'happy';
+    const showBubble = c.phase === 'order' || c.phase === 'wait' || c.phase === 'happy' || c.phase === 'sad';
     c.bubbleK = clamp(c.bubbleK + (showBubble ? dt * 3 : -dt * 5), 0, 1);
   }
 
@@ -1312,6 +1657,11 @@
     if (c.talk > 0) ellipse(hx, my, 9, 3 + 6 * Math.abs(Math.sin(t * 14)), '#8E3B46');
     else if (c.phase === 'eat') ellipse(hx, my, 9, 2 + 5 * Math.abs(Math.sin(t * 10)), '#8E3B46');
     else if (c.phase === 'happy') { ctx.fillStyle = '#8E3B46'; ctx.beginPath(); ctx.arc(hx, my - 4, 13, 0, Math.PI); ctx.fill(); ellipse(hx, my + 4, 6, 3, '#E86F7E'); }
+    else if (c.sad) {
+      ctx.strokeStyle = '#8E3B46'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(hx, my + 8, 11, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#2B2433';
+      ctx.beginPath(); ctx.moveTo(hx - R * 0.55, hy - 10); ctx.lineTo(hx - R * 0.2, hy - 16); ctx.moveTo(hx + R * 0.55, hy - 10); ctx.lineTo(hx + R * 0.2, hy - 16); ctx.stroke();
+    }
     else { ctx.strokeStyle = '#8E3B46'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(hx, my - 8, 11, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke(); }
     if (L.glasses) {
       ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
@@ -1322,6 +1672,7 @@
   }
   function drawDishView(D, x, y, s, served) {
     ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    if (D.burnt) ctx.filter = 'brightness(.5) sepia(.7)';
     drawDish(D, served);
     ctx.restore();
   }
@@ -1334,7 +1685,7 @@
   function drawBubble(c) {
     if (c.bubbleK <= 0) return;
     const k = easeBack(c.bubbleK);
-    const happy = c.phase === 'happy';
+    const happy = c.phase === 'happy' || c.phase === 'sad';
     const bx = happy ? 830 : 620, by = 60, bw = happy ? 130 : 250, bh = happy ? 110 : 190;
     const hy = COUNTER_Y - (c.look.kid ? 150 : 206);
     ctx.save();
@@ -1342,7 +1693,11 @@
     ctx.fillStyle = 'rgba(59,53,80,.12)'; rr(bx + 4, by + 8, bw, bh, 34); ctx.fill();
     ctx.fillStyle = '#FFFFFF'; rr(bx, by, bw, bh, 34); ctx.fill();
     ctx.beginPath(); ctx.moveTo(bx + bw - 12, by + bh * 0.45); ctx.lineTo(c.x - 60, hy - 10); ctx.lineTo(bx + bw - 12, by + bh * 0.75); ctx.fill();
-    if (happy) {
+    if (c.phase === 'sad') {
+      sadFace(bx + bw / 2, by + bh / 2, 36);
+      ctx.fillStyle = '#7FB6E8'; ctx.beginPath(); ctx.moveTo(bx + bw / 2 + 22, by + bh / 2 - 2); ctx.quadraticCurveTo(bx + bw / 2 + 32, by + bh / 2 + 14, bx + bw / 2 + 22, by + bh / 2 + 18);
+      ctx.quadraticCurveTo(bx + bw / 2 + 12, by + bh / 2 + 14, bx + bw / 2 + 22, by + bh / 2 - 2); ctx.fill();
+    } else if (happy) {
       const s = 1 + Math.sin(S.time * 8) * 0.08;
       ctx.translate(bx + bw / 2, by + bh / 2); ctx.scale(s, s);
       ctx.fillStyle = C.coral;
@@ -1399,7 +1754,7 @@
     else { ctx.fillStyle = C.worktop; ctx.fillRect(0, COUNTER_Y + 32, W, H - COUNTER_Y - 32); }
   }
   function wantedIng() {
-    if (!canAct()) return null;
+    if (!canAct() || S.hard) return null;
     const st = curStep();
     if (st.type === 'place' || st.type === 'smear' || st.type === 'sprinkle' || st.type === 'pour' || (st.type === 'cut' && S.cut.phase === 'drop')) return st.ing;
     return null;
@@ -1494,6 +1849,7 @@
     const d = S.drag, D = S.D, a = dishAt(), sc = dishS();
     const holdingDish = d && d.kind === 'dish';
     if (!holdingDish && !S.dishHidden) drawDishView(D, a.x, a.y, sc, false);
+    if (S.hard) { drawStationHard(); return; }
     if (!canAct()) return;
     const st = curStep();
     // przerywana ramka: gdzie upuścić
@@ -1524,6 +1880,29 @@
         ctx.restore();
       }
     }
+  }
+  function drawStationHard() {
+    const d = S.drag, a = dishAt(), P = S.proc;
+    if (hasSpoon() && !(d && d.kind === 'stir')) spr('lyzka_drewno', SPOON_AT.x, SPOON_AT.y, 0.8, 0.5);
+    if (hasStove()) {
+      const b = stoveAt();
+      if (!P) {
+        circle(b.x, b.y + 4, 30, 'rgba(90,50,15,.18)'); circle(b.x, b.y, 30, '#FFFFFF');
+        ctx.strokeStyle = '#E2CFAE'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, 30, 0, Math.PI * 2); ctx.stroke();
+        drawFlame(b.x, b.y + 4, 0.9);
+      } else if (P.phase === 'cook' || P.phase === 'cook2') drawRing(b.x, b.y, clamp(P.t / (P.phase === 'cook' ? P.dur : P.dur * 0.5), 0, 1));
+      else if (P.phase === 'flip') {
+        const k = 1 + Math.sin(S.time * 8) * 0.1;
+        ctx.save(); ctx.translate(b.x, b.y); ctx.scale(k, k);
+        circle(0, 0, 28, S.D.burnt ? '#8C7B74' : C.mint);
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(0, 0, 13, -2.6, 1.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, 14); ctx.lineTo(-3, 13); ctx.lineTo(1, 6); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    const pour = S.R && S.R.steps.find((st) => st[0] === 'pour');
+    if (pour && d && d.kind === 'tool' && ING[d.ing].pour) drawPourTarget({ n: pour[2], ing: d.ing });
   }
   function drawStirDots(st) {
     const a = dishAt();
@@ -1561,7 +1940,7 @@
       ctx.fillStyle = '#FFFFFF'; rr(g.x, g.y, g.w, g.h, 13); ctx.fill();
       ctx.strokeStyle = '#C9D4DD'; ctx.lineWidth = 3; ctx.stroke();
       ctx.fillStyle = 'rgba(123,200,164,.35)';
-      ctx.fillRect(g.x + 3, g.y + g.h * (1 - hi), g.w - 6, g.h * (hi - lo));
+      if (!S.hard) ctx.fillRect(g.x + 3, g.y + g.h * (1 - hi), g.w - 6, g.h * (hi - lo));
       const h = g.h * D.fill;
       ctx.fillStyle = D.liquid || ING[st.ing].pour === '#FFFFFF' ? (D.liquid || '#DDE8F0') : ING[st.ing].pour;
       if (h > 0) { rr(g.x + 4, g.y + g.h - h, g.w - 8, h, 8); ctx.fillStyle = mixColor(ING[st.ing].pour, '#9BB8CC', 0.25); ctx.fill(); }
@@ -1589,7 +1968,7 @@
     ctx.strokeStyle = '#EADCC6'; ctx.lineWidth = 2; ctx.stroke();
     S.steps.forEach((st, i) => {
       const tw = r.w - 30, th = r.th, tx = r.x + 15, ty = r.y + 14 + i * r.step;
-      const done = i < S.stepIdx, cur = i === S.stepIdx && canAct();
+      const done = S.hard ? st.type !== 'serve' && touched(st) : i < S.stepIdx, cur = !S.hard && i === S.stepIdx && canAct();
       ctx.save();
       if (!done && !cur) ctx.globalAlpha = 0.5;
       const pulse = cur ? 1 + Math.sin(S.time * 5) * 0.04 : 1;
@@ -1615,7 +1994,7 @@
   function drawStepIcon(st, i, done, tw, th) {
     const I = ING[st.ing] || {}, big = Math.min(tw - 16, th - 12), withDots = st.n > 1 && (st.type === 'place' || st.type === 'cut' || st.type === 'stir');
     const iy = withDots ? -8 : 0, ih = withDots ? big - 18 : big;
-    const filled = done ? st.n : i === S.stepIdx ? (st.type === 'cut' ? S.cut.slices : st.cnt) : 0;
+    const filled = S.hard ? 0 : done ? st.n : i === S.stepIdx ? (st.type === 'cut' ? S.cut.slices : st.cnt) : 0;
     switch (st.type) {
       case 'place': sprFit(I.icon || I.held || st.ing, 0, iy, big, ih); break;
       case 'cut': sprFit(I.held, -4, iy, big, ih); spr('tasak', 26, iy + 18, 0.24); break;
@@ -1638,10 +2017,12 @@
   }
   function drawProgress() {
     if (!S.queue.length) return;
+    if (S.hard) hardBadge(186, 36, 0.9, true);
     const n = S.queue.length, x0 = 230;
     for (let i = 0; i < n; i++) {
       const x = x0 + i * 52, y = 36;
-      if (i < S.served) spr('moneta', x, y);
+      if (i < S.served && S.results[i] === 'bad') sadFace(x, y, 20);
+      else if (i < S.served) spr('moneta', x, y);
       else {
         circle(x, y, 20, i === S.served ? '#FFFFFF' : 'rgba(255,255,255,.55)');
         ctx.strokeStyle = i === S.served ? C.coral : '#E2C9A6'; ctx.lineWidth = i === S.served ? 4 : 3;
@@ -1651,9 +2032,21 @@
       }
     }
   }
+  function sadFace(x, y, r) {
+    circle(x, y, r, '#9AA6B8');
+    circle(x - r * 0.35, y - r * 0.15, r * 0.12, '#FFFFFF'); circle(x + r * 0.35, y - r * 0.15, r * 0.12, '#FFFFFF');
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(2, r * 0.14); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(x, y + r * 0.55, r * 0.38, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
+  }
+  function hardBadge(x, y, s, on) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    circle(0, 0, 22, on ? C.coral : '#FFFFFF');
+    drawFlame(0, 3, 0.75);
+    ctx.restore();
+  }
   function drawRoundBtn(b, kind) {
-    circle(b.x, b.y, b.r, 'rgba(255,255,255,.85)');
-    ctx.fillStyle = C.ink; ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    if (!b.bare) circle(b.x, b.y, b.r, 'rgba(255,255,255,.85)');
+    ctx.fillStyle = b.bare ? '#FFFFFF' : C.ink; ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (kind === 'sound') {
       ctx.beginPath(); ctx.moveTo(b.x - 14, b.y - 6); ctx.lineTo(b.x - 6, b.y - 6); ctx.lineTo(b.x + 4, b.y - 15); ctx.lineTo(b.x + 4, b.y + 15); ctx.lineTo(b.x - 6, b.y + 6); ctx.lineTo(b.x - 14, b.y + 6); ctx.fill();
       ctx.beginPath();
@@ -1662,6 +2055,10 @@
       ctx.stroke();
     } else if (kind === 'map') {
       for (let k = 0; k < 4; k++) { rr(b.x - 13 + (k % 2) * 14, b.y - 13 + Math.floor(k / 2) * 14, 12, 12, 3); ctx.fill(); }
+    } else if (kind === 'retry') {
+      ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.42, -0.4 * Math.PI, 1.3 * Math.PI); ctx.stroke();
+      const ax = b.x + Math.cos(-0.4 * Math.PI) * b.r * 0.42, ay = b.y + Math.sin(-0.4 * Math.PI) * b.r * 0.42;
+      ctx.beginPath(); ctx.moveTo(ax - 12, ay - 9); ctx.lineTo(ax + 2, ay); ctx.lineTo(ax - 10, ay + 11); ctx.stroke();
     } else if (kind === 'back') {
       ctx.lineWidth = 6; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(b.x + 10, b.y); ctx.lineTo(b.x - 10, b.y); ctx.moveTo(b.x - 2, b.y - 10); ctx.lineTo(b.x - 12, b.y); ctx.lineTo(b.x - 2, b.y + 10); ctx.stroke();
@@ -1692,7 +2089,7 @@
     return null;
   }
   function drawHint() {
-    if (!canAct() || S.drag || S.idle < S.df.hintAt + 4) return;
+    if (!canAct() || S.hard || S.drag || S.idle < S.df.hintAt + 4) return;
     const h = hintPath(); if (!h) return;
     const k = (S.time % 2.2) / 2.2;
     let x, y, press = 0;
@@ -1721,7 +2118,7 @@
     if (d.kind === 'stir') { spr('lyzka_drewno', x + 18, y - 40, 1); return; }
     if (d.kind === 'tool') {
       const I = ING[d.ing];
-      const pouring = I.pour && canAct() && curStep().type === 'pour' && curStep().ing === d.ing && inRect(d, BOARD, 40) && s === 1;
+      const pouring = s === 1 && pouringNow(d);
       if (pouring) {
         ctx.save(); ctx.strokeStyle = I.pour === '#FFFFFF' ? '#F2F6FA' : I.pour; ctx.lineWidth = 9; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(x - 44, y - 6); ctx.quadraticCurveTo(x - 56, y + 30, x - 54, y + 70 + Math.sin(S.time * 30) * 2); ctx.stroke();
@@ -1778,11 +2175,21 @@
     ctx.fillStyle = '#F1DDBF';
     for (let y = 0; y < H; y += 40) for (let x = (y / 40) % 2 ? 20 : 0; x < W; x += 40) circle(x, y, 2, 'rgba(214,180,130,.35)');
     drawRoundBtn({ x: 60, y: 50, r: 32 }, 'back');
-    wordmark(W / 2, 96, 64);
+    for (const hard of [false, true]) {
+      const t = hard ? TABS.hard : TABS.easy, on = S.hard === hard, col = hard ? C.coral : C.mint;
+      ctx.fillStyle = 'rgba(59,53,80,.12)'; rr(t.x + 3, t.y + 6, t.w, t.h, 38); ctx.fill();
+      ctx.fillStyle = on ? col : '#FFFBF3'; rr(t.x, t.y, t.w, t.h, 38); ctx.fill();
+      ctx.strokeStyle = on ? '#FFFFFF' : '#EADCC6'; ctx.lineWidth = on ? 5 : 3; ctx.stroke();
+      spr('czapka', t.x + 48, t.y + t.h / 2 + 2, 0.36);
+      if (hard) hardBadge(t.x + 70, t.y + t.h / 2 + 14, 0.7, false);
+      ctx.fillStyle = on ? '#FFFFFF' : C.ink; ctx.font = `800 30px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(hard ? 'Trudny' : 'Łatwy', t.x + 98, t.y + t.h / 2 + 2);
+    }
+    const prog = progOf();
     for (let ci = 0; ci < CHAPTERS.length; ci++) {
       const ch = CHAPTERS[ci], x = mapCol(ci), y = MAP.y0, w = MAP.cw, h = 548;
       const first = ci * LEVELS_PER, locked = first > prog.unlocked;
-      const nDone = [0, 1, 2, 3, 4].filter((k) => prog.done[first + k]).length;
+      const nDone = Array.from({ length: LEVELS_PER }, (_, k) => k).filter((k) => prog.done[first + k]).length;
       ctx.save();
       if (locked) ctx.globalAlpha = 0.6;
       ctx.fillStyle = 'rgba(59,53,80,.12)'; rr(x + 3, y + 8, w, h, 26); ctx.fill();
@@ -1793,23 +2200,25 @@
       ctx.fillStyle = C.ink; ctx.font = `700 19px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(ch.name, x + w / 2, y + 132);
       ctx.restore();
+      for (let li = 0; li < LEVELS_PER - 1; li++) {
+        const a = lvPos(ci, li), b = lvPos(ci, li + 1);
+        ctx.strokeStyle = prog.done[first + li] ? '#9FD9BC' : '#EADCC6'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
       for (let li = 0; li < LEVELS_PER; li++) {
-        const lv = first + li, cx = x + w / 2, cy = MAP.btnY0 + li * MAP.btnDy;
+        const lv = first + li, q = lvPos(ci, li), cx = q.x, cy = q.y;
         const lk = lv > prog.unlocked, dn = !!prog.done[lv], next = !lk && !dn;
-        if (li < LEVELS_PER - 1) { ctx.strokeStyle = prog.done[lv] ? '#9FD9BC' : '#EADCC6'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx, cy + MAP.btnR); ctx.lineTo(cx, cy + MAP.btnDy - MAP.btnR); ctx.stroke(); }
         const p = next ? 1 + Math.sin(S.mapT * 5) * 0.07 : 1;
         ctx.save(); ctx.translate(cx, cy); ctx.scale(p, p);
         circle(0, 5, MAP.btnR, lk ? '#D9CFC2' : dn ? '#4FA77B' : '#B8492F');
         circle(0, 0, MAP.btnR, lk ? '#EEE6DA' : dn ? C.mint : C.coral);
-        if (lk) spr('klodka', 0, 4, 0.55);
+        if (lk) spr('klodka', 0, 4, 0.48);
         else {
-          ctx.fillStyle = '#FFFFFF'; ctx.font = `800 28px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#FFFFFF'; ctx.font = `800 25px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(String(li + 1), 0, 1);
-          if (dn) { ctx.save(); ctx.translate(MAP.btnR - 6, -MAP.btnR + 6); spr('moneta', 0, 0, 0.55); ctx.restore(); }
+          if (dn) { ctx.save(); ctx.translate(MAP.btnR - 5, -MAP.btnR + 5); spr('moneta', 0, 0, 0.45); ctx.restore(); }
         }
         ctx.restore();
-        // kropki trudności
-        for (let k = 0; k < 5; k++) circle(cx + MAP.btnR + 10, cy - 16 + k * 8, 2.6, k < li + 1 ? (lk ? '#CFC3B3' : C.coral) : '#E8DCCB');
       }
     }
   }
@@ -1822,8 +2231,9 @@
     for (let i = 0; i < 3; i++) {
       const a = clamp(S.doneT * 2 - 0.6 - i * 0.3, 0, 1);
       if (a <= 0) continue;
+      const lit = i < S.stars;
       ctx.save(); ctx.translate(-110 + i * 110, -30 - (i === 1 ? 24 : 0)); ctx.scale(easeBack(a), easeBack(a));
-      ctx.fillStyle = C.gold; ctx.strokeStyle = C.goldDark; ctx.lineWidth = 5; ctx.beginPath();
+      ctx.fillStyle = lit ? C.gold : '#ECE4D8'; ctx.strokeStyle = lit ? C.goldDark : '#D6CABA'; ctx.lineWidth = 5; ctx.beginPath();
       for (let j = 0; j < 10; j++) { const an = (j / 10) * Math.PI * 2 - Math.PI / 2, r = j % 2 ? 22 : 48; ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r); }
       ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
     }
@@ -1834,10 +2244,15 @@
     ctx.restore();
     if (S.doneT > 1) {
       const p = 1 + Math.sin(S.time * 5) * 0.06;
-      const last = S.lv === TOTAL_LEVELS - 1;
+      const last = S.lv === TOTAL_LEVELS - 1 && S.passed;
       const mb = { x: last ? W / 2 : W / 2 - 80, y: 590, r: 50 };
       circle(mb.x, mb.y + 6, mb.r, 'rgba(59,53,80,.2)'); drawRoundBtn(mb, 'map');
-      if (!last) {
+      if (!S.passed) {
+        ctx.save(); ctx.translate(W / 2 + 80, 590); ctx.scale(p, p);
+        circle(0, 6, 64, 'rgba(59,53,80,.2)'); circle(0, 0, 64, C.coral);
+        ctx.restore();
+        ctx.save(); ctx.strokeStyle = '#FFFFFF'; drawRoundBtn({ x: W / 2 + 80, y: 590, r: 64, bare: true }, 'retry'); ctx.restore();
+      } else if (!last) {
         ctx.save(); ctx.translate(W / 2 + 80, 590); ctx.scale(p, p);
         circle(0, 6, 64, 'rgba(59,53,80,.2)'); circle(0, 0, 64, C.mint);
         ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1894,12 +2309,22 @@
 
   // ---------- do testów w konsoli ----------
   window.__kuchcik = {
-    S, prog, CHAPTERS,
+    S, PROG, CHAPTERS, judge, finalDish,
+    setHard(h) { S.hard = !!h; },
+    /* tryb trudny: robi danie z przepisu od razu (dobre albo z dodatkowym plasterkiem) i podaje je */
+    serveMade(good) {
+      if (!canAct()) return 'czekaj';
+      const D = newDish(S.R.dish); D.mix = S.R.mix || null;
+      for (const st of S.R.steps) applyInstant(D, st, S.R);
+      if (!good) addLayer(D, D.type === 'rozek' ? 'wisienka' : Object.keys(ING).find((k) => ING[k].slice && S.ch.crates.includes(k)) || 'wisienka', 'whole', 0, 1);
+      S.D = D; serve();
+      return 'ok';
+    },
     ready: () => artLeft === 0,
     step(sec) { for (let t = 0; t < sec; t += 1 / 60) update(1 / 60); draw(); },
     startGame() { start(); },
     loadLevel(n) { startLevel(n); },
-    unlockAll() { prog.unlocked = TOTAL_LEVELS - 1; store.set('kuchcik-prog', prog); },
+    unlockAll() { progOf().unlocked = TOTAL_LEVELS - 1; saveProg(); },
     /* wykonuje bieżący krok przepisu tak, jakby zrobiło to dziecko */
     auto() {
       if (!canAct()) return 'czekaj';
@@ -1909,7 +2334,7 @@
         case 'smear': {
           S.drag = { kind: 'tool', ing: st.ing, x: 0, y: 0 };
           const ar = areaOf(D), sc = dishS();
-          for (const c of ar.cells) { if (!S.drag) break; paint({ x: a.x + c.x * sc, y: a.y + c.y * sc }); }
+          for (const c of ar.cells) { if (!S.drag) break; paint({ x: a.x + c.x * sc, y: a.y + c.y * sc }, st.ing); }
           break;
         }
         case 'sprinkle': {
